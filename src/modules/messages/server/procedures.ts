@@ -31,7 +31,7 @@ export const messagesRouter = createTRPCRouter({
       });
 
       await inngest.send({
-        name: "code-run/run",
+        name: "code-agent/run",
         data: {
           value: input.value,
         },
