@@ -1,8 +1,14 @@
 import { inngest } from "./client";
-import { openai, createAgent, createTool } from "@inngest/agent-kit";
+import {
+  openai,
+  createAgent,
+  createTool,
+  createNetwork,
+} from "@inngest/agent-kit";
 import { Sandbox } from "@e2b/code-interpreter";
-import { getSandbox } from "./utils";
+import { getSandbox, lastAssistantTextMessageContent } from "./utils";
 import { z } from "zod";
+import { PROMPT } from "@/prompt";
 
 export const helloWorld = inngest.createFunction(
   { id: "hello-world" },
@@ -15,9 +21,15 @@ export const helloWorld = inngest.createFunction(
 
     const codeAgent = createAgent({
       name: "code-agent",
-      system:
-        "You are an expert Next.js developer. You write readable, maintainable code. You write simple Next.js & React sinppets.",
-      model: openai({ model: "gpt-4o" }),
+      system: PROMPT,
+      description:
+        "A senior software engineer working in a sandboxed Next.js environment.",
+      model: openai({
+        model: "gpt-4.1",
+        defaultParameters: {
+          temperature: 0.1,
+        },
+      }),
       tools: [
         createTool({
           name: "terminal",
@@ -61,54 +73,83 @@ export const helloWorld = inngest.createFunction(
             ),
           }),
           handler: async ({ files }, { step, network }) => {
-            const newFiles = await step?.run("CreateOrUpdateFiles", async () => {
-              try {
-                const updatedFiles = network.state.data.files || {}
-                const sandbox = await getSandbox(sandboxId);
-                for (const file of files) {
-                  await sandbox.files.write(file.path, file.content);
-                  updatedFiles[file.path] = file.content;
+            const newFiles = await step?.run(
+              "CreateOrUpdateFiles",
+              async () => {
+                try {
+                  const updatedFiles = network.state.data.files || {};
+                  const sandbox = await getSandbox(sandboxId);
+                  for (const file of files) {
+                    await sandbox.files.write(file.path, file.content);
+                    updatedFiles[file.path] = file.content;
+                  }
+
+                  return updatedFiles;
+                } catch (error) {
+                  return "Error: " + error;
                 }
-
-                return updatedFiles
-              } catch (error) {
-                return "Error: " + error
               }
-            })
+            );
 
-            if(typeof newFiles === "object") {
-              network.state.data.files = newFiles
+            if (typeof newFiles === "object") {
+              network.state.data.files = newFiles;
             }
           },
         }),
-        createTool ({
+        createTool({
           name: "readFiles",
           description: "Read fiels from the sandbox",
           parameters: z.object({
-            paths: z.array(z.string()),
+            files: z.array(z.string()),
           }),
-          handler: async ({files}, {step}) => {
+          handler: async ({ files }, { step }) => {
             return await step?.run("readfiles", async () => {
               try {
                 const sandbox = await getSandbox(sandboxId);
-                const contents = []
+                const contents = [];
                 for (const file of files) {
-                  const content = await sandbox.files.read(file)
-                  contents.push({ path: file, content })
+                  const content = await sandbox.files.read(file);
+                  contents.push({ path: file, content });
                 }
                 return JSON.stringify(contents);
               } catch (e) {
                 return `Error reading files: ${e}`;
               }
-            })
-          }
-        })
+            });
+          },
+        }),
       ],
+      lifecycle: {
+        onResponse: async ({ result, network }) => {
+          const lastAssistantMessageText =
+            lastAssistantTextMessageContent(result);
+
+          if (lastAssistantMessageText && network) {
+            if (lastAssistantMessageText.includes("<task_summary>")) {
+              network.state.data.summary = lastAssistantMessageText;
+            }
+          }
+          return result;
+        },
+      },
     });
 
-    const { output } = await codeAgent.run(
-      `Write the following snippet: ${event.data.value}`
-    );
+    const network = createNetwork({
+      name: "code-agent-network",
+      agents: [codeAgent],
+      maxIter: 15,
+      router: async ({ network }) => {
+        const summary = network.state.data.summary;
+
+        if (summary) {
+          return;
+        }
+
+        return codeAgent;
+      },
+    });
+
+    const result = await network.run(event.data.value);
 
     const sandboxUrl = await step.run("get-sandbox-url", async () => {
       const sandbox = await getSandbox(sandboxId);
@@ -116,6 +157,11 @@ export const helloWorld = inngest.createFunction(
       return `https://${host}`;
     });
 
-    return { output, sandboxUrl };
+    return {
+      url: sandboxUrl,
+      title: "Fragment",
+      files: result.state.data.files,
+      summary: result.state.data.summary,
+    };
   }
 );
