@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTRPC } from "@/trpic/client";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
 const Page = () => {
+  const router = useRouter()
   const [value, setValue] = useState("");
 
   const trpc = useTRPC();
@@ -16,6 +18,9 @@ const Page = () => {
       onError: (error) => {
         toast.error(error.message);
       },
+      onSuccess: (data, variables, context) => {
+        router.push(`/projects/${data.id}`);
+      }
     })
   );
 
