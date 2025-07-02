@@ -134,7 +134,7 @@ export const MessageCard = ({
         content={content}
         fragment={fragment}
         createdAt={createdAt}
-        inActiveFragment={isActiveFragment}
+        isActiveFragment={isActiveFragment}
         onFragmentClick={onFragmentClick}
         type={type}
       />
