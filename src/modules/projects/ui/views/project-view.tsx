@@ -26,7 +26,7 @@ export const ProjectView = ({ projectId }: Props) => {
           </Suspense>
         </ResizablePanel>
         <ResizableHandle withHandle className="bg-border" />
-        <ResizablePanel defaultSize={35} minSize={50}>
+        <ResizablePanel defaultSize={65} minSize={50}>
           TODO: Preview
         </ResizablePanel>
       </ResizablePanelGroup>
