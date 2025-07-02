@@ -5,6 +5,7 @@ import { MessageForm } from "./message-form";
 import { useEffect, useRef } from "react";
 import { Fragment } from "@/generated/prisma";
 import { se } from "date-fns/locale";
+import { MessageLoading } from "./message-loading";
 
 interface Props {
   projectId: string;
@@ -12,32 +13,39 @@ interface Props {
   setActiveFragment: (fragment: Fragment | null) => void;
 }
 
-export const MessagesContainer = ({ projectId, activeFragment, setActiveFragment }: Props) => {
+export const MessagesContainer = ({
+  projectId,
+  activeFragment,
+  setActiveFragment,
+}: Props) => {
   const bottomRef = useRef<HTMLDivElement>(null);
   const trpc = useTRPC();
-
 
   const { data: messages } = useSuspenseQuery(
     trpc.messages.getMany.queryOptions({
       projectId: projectId,
+    }, {
+      // TODO: this for temporty solution
+      refetchInterval: 5000,
     })
   );
 
   useEffect(() => {
     const lastAssistantMessageWithFragment = messages.findLast(
-      (message) => message.role === "ASSISTANT" && !!message.fragment,
-    )
+      (message) => message.role === "ASSISTANT" && !!message.fragment
+    );
 
-    if(lastAssistantMessageWithFragment) {
-      setActiveFragment(lastAssistantMessageWithFragment.fragment)
+    if (lastAssistantMessageWithFragment) {
+      setActiveFragment(lastAssistantMessageWithFragment.fragment);
     }
   }, [messages, setActiveFragment]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView()
-  }, [messages.length])
-
-
+    bottomRef.current?.scrollIntoView();
+  }, [messages.length]);
+  
+  const lastMessage = messages[messages.length - 1];
+  const isLastMessageUser = lastMessage?.role === "USER"
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
@@ -55,6 +63,7 @@ export const MessagesContainer = ({ projectId, activeFragment, setActiveFragment
               type={message.type}
             />
           ))}
+          {isLastMessageUser && <MessageLoading />}
           <div ref={bottomRef} />
         </div>
       </div>
