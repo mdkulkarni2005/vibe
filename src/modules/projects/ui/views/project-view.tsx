@@ -10,6 +10,8 @@ import { Suspense, useState } from "react";
 import { Fragment } from "@/generated/prisma";
 import { ProjectHeader } from "../components/project-header";
 import { FragmentWeb } from "../components/fragment-web";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@radix-ui/react-tabs";
+import { EyeIcon } from "lucide-react";
 
 interface Props {
   projectId: string;
@@ -17,6 +19,7 @@ interface Props {
 
 export const ProjectView = ({ projectId }: Props) => {
   const [activeFragment, setActiveFragment] = useState<Fragment | null>(null);
+  const [tabState, setTabState] = useState < "preview" || "code" > "preview";
 
   return (
     <div className="h-screen">
@@ -39,7 +42,21 @@ export const ProjectView = ({ projectId }: Props) => {
         </ResizablePanel>
         <ResizableHandle withHandle className="bg-border" />
         <ResizablePanel defaultSize={65} minSize={50}>
-          {!!activeFragment && <FragmentWeb data={activeFragment} />}
+          <Tabs
+            className="h-full gap-y-0"
+            defaultValue="preview"
+            value={tabState}
+            onValueChange={(value) => setTabState(value as "preivew" | "code")}
+          >
+            <div className="w-full flex items-center p-2 border-b gap-x-2">
+              <TabsList className="h-8 p-0 border rounded-md">
+                <TabsTrigger value="preview" className="rounded-md">
+                  <EyeIcon />
+                </TabsTrigger>
+                {!!activeFragment && <FragmentWeb data={activeFragment} />}
+              </TabsList>
+            </div>
+          </Tabs>
         </ResizablePanel>
       </ResizablePanelGroup>
     </div>
