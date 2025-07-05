@@ -11,7 +11,9 @@ import { Fragment } from "@/generated/prisma";
 import { ProjectHeader } from "../components/project-header";
 import { FragmentWeb } from "../components/fragment-web";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@radix-ui/react-tabs";
-import { EyeIcon } from "lucide-react";
+import { CodeIcon, CrownIcon, EyeIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 interface Props {
   projectId: string;
@@ -51,11 +53,26 @@ export const ProjectView = ({ projectId }: Props) => {
             <div className="w-full flex items-center p-2 border-b gap-x-2">
               <TabsList className="h-8 p-0 border rounded-md">
                 <TabsTrigger value="preview" className="rounded-md">
-                  <EyeIcon />
+                  <EyeIcon /> <span>Demo</span>
                 </TabsTrigger>
-                {!!activeFragment && <FragmentWeb data={activeFragment} />}
+                <TabsTrigger value="code" className="rounded-md">
+                  <CodeIcon /> <span>Code</span>
+                </TabsTrigger>
               </TabsList>
+              <div className="ml-auto flex items-center gap-x-2">
+                <Button asChild size="sm" variant="default">
+                  <Link href="/pricing">
+                    <CrownIcon /> Upgrade
+                  </Link>
+                </Button>
+              </div>
             </div>
+            <TabsContent value="preivew">
+              {!!activeFragment && <FragmentWeb data={activeFragment} />}
+            </TabsContent>
+            <TabsContent value="code">
+              <p>TODO: Code</p>
+            </TabsContent>
           </Tabs>
         </ResizablePanel>
       </ResizablePanelGroup>
