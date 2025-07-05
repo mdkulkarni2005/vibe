@@ -1,0 +1,58 @@
+import { CopyCheckIcon, CopyIcon } from "lucide-react";
+import { useState, useMemo, useCallback, Fragment } from "react";
+import { Hint } from "./hint";
+import { Button } from "./ui/button";
+import { CodeView } from "./code-view";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "./ui/resizable";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+  BreadcrumbEllipsis,
+} from "./ui/breadcrumb";
+
+type FileCollection = { [path: string]: string };
+
+function getLanguageFromExtension(filename: string): string {
+    const extension = filename.split('.').pop()?.toLowerCase();
+    return extension || "text"
+}
+
+interface FileExplorerProps {
+    files: FileCollection;
+
+}
+
+export const FileExplorer = ({
+    files,
+}: FileExplorerProps) => {
+
+    const [selectedFile, setSelectedFile] = useState<string | null>(() => {
+        const fileKeys = Object.keys(files);
+        return fileKeys.length > 0 ? fileKeys[0] : null;
+    });
+
+    return (
+        <ResizablePanelGroup direction="horizontal">
+            <ResizablePanel defaultSize={30} minSize={30} className="bg-sidebar">
+                <p>TODO:  Tree view</p>
+            </ResizablePanel>
+            <ResizableHandle className="hover:bg-primary transition-colors" />
+            <ResizablePanel defaultSize={70} minSize={50}>
+                {selectedFile && files[selectedFile] ? (
+                    <div>TODO: Code View</div>
+                ) : (
+                    <div className="flex h-full items-center justify-center text-muted-foreground">
+                        Select a file to view it's content
+                    </div>
+                )}
+            </ResizablePanel>
+        </ResizablePanelGroup>
+    )
+}
