@@ -62,7 +62,7 @@ const Tree = ({
   item,
   selectedValue,
   onSelect,
-  parentPath = "",
+  parentPath,
 }: TreeProps) => {
   const [name, ...items] = Array.isArray(item) ? item : [item];
   const currentPath = parentPath ? `${parentPath}/${name}` : name;
@@ -74,7 +74,7 @@ const Tree = ({
       <SidebarMenuButton
         isActive={isSelected}
         className="data-[active=true]:bg-transparent"
-        onSelect={() => onSelect?.(currentPath)}
+        onClick={() => onSelect?.(currentPath)}
       >
         <FileIcon />
         <span className="truncate">{name}</span>
