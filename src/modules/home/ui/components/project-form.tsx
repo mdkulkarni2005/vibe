@@ -19,6 +19,7 @@ import { Form, FormField } from "@/components/ui/form";
 import { TypeOf } from "zod";
 import { useRouter } from "next/navigation";
 import { PROJECT_TEMPLATES } from "../../constants";
+import { useClerk } from "@clerk/nextjs";
 
 interface Props {
   projectId: string;
@@ -35,6 +36,7 @@ export const ProjectForm = ({ projectId }: Props) => {
   const router = useRouter();
   const queryClient = useQueryClient();
   const trpc = useTRPC();
+  const clerk = useClerk();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -52,9 +54,12 @@ export const ProjectForm = ({ projectId }: Props) => {
       },
       onError: (error) => {
         toast.error(
-          //TODO: redirect to pricing page if specific error
           error.message || "An error occurred while creating the message"
         );
+        if (error?.data?.code === "UNAUTHORIZED") {
+          clerk.openSignIn();
+        }
+        //TODO: redirect to pricing page if specific error
       },
     })
   );
@@ -67,11 +72,11 @@ export const ProjectForm = ({ projectId }: Props) => {
 
   const onSelect = (value: string) => {
     form.setValue("value", value, {
-        shouldDirty: true,
-        shouldValidate: true,
-        shouldTouch: true,
-    })
-  }
+      shouldDirty: true,
+      shouldValidate: true,
+      shouldTouch: true,
+    });
+  };
 
   const [isFocused, setIsFocused] = useState(false);
   const isPending = createProject.isPending;
