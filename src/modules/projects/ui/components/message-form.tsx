@@ -8,6 +8,7 @@ import { ArrowUpIcon, Loader2Icon } from "lucide-react";
 import {
   QueryClient,
   useMutation,
+  useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
@@ -15,6 +16,8 @@ import { useTRPC } from "@/trpic/client";
 import { Button } from "@/components/ui/button";
 import { Form, FormField } from "@/components/ui/form";
 import { TypeOf } from "zod";
+import { Usage } from "./usage";
+import { useRouter } from "next/navigation";
 
 interface Props {
   projectId: string;
@@ -29,9 +32,12 @@ const formSchema = z.object({
 
 export const MessageForm = ({ projectId }: Props) => {
   const [isFocused, setIsFocused] = useState(false);
-  const showUser = false;
   const queryClient = useQueryClient();
   const trpc = useTRPC();
+  const router = useRouter()
+
+  const { data: usage } = useQuery(trpc.usage.status.queryOptions());
+  const showUsage = !!usage;
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -47,13 +53,18 @@ export const MessageForm = ({ projectId }: Props) => {
         queryClient.invalidateQueries(
           trpc.messages.getMany.queryOptions({ projectId })
         );
-        // TODO: invlidate usage status
+        queryClient.invalidateQueries(
+          trpc.usage.status.queryOptions()
+        );
       },
       onError: (error) => {
         toast.error(
             //TODO: redirect to pricing page if specific error
           error.message || "An error occurred while creating the message"
         );
+        if(error.data?.code === "TOO_MANY_REQUESTS") {
+          router.push("/pricing");
+        }
       },
     })
   );
@@ -70,12 +81,15 @@ export const MessageForm = ({ projectId }: Props) => {
 
   return (
     <Form {...form}>
+      {showUsage && (
+        <Usage points={usage.remainingPoints} msBeforNext={usage.msBeforeNext} />
+      )}
       <form
         onSubmit={form.handleSubmit(onSubmit)}
         className={cn(
           "relative border p-4 rounded-xl bg-sidebar transition-all",
           isFocused && "shadow-xs",
-          showUser && "rounded-t-none"
+          showUsage && "rounded-t-none"
         )}
       >
         <FormField
