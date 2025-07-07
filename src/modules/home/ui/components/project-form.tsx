@@ -22,7 +22,7 @@ import { PROJECT_TEMPLATES } from "../../constants";
 import { useClerk } from "@clerk/nextjs";
 
 interface Props {
-  projectId: string;
+  projectId?: string;
 }
 
 const formSchema = z.object({

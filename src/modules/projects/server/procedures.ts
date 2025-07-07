@@ -42,6 +42,16 @@ export const projectsRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      // Ensure user exists in database before creating project
+      await prisma.user.upsert({
+        where: {
+          id: ctx.auth.userId,
+        },
+        update: {}, // No updates needed if user exists
+        create: {
+          id: ctx.auth.userId,
+        },
+      });
 
       const createProject = await prisma.project.create({
         data: {
