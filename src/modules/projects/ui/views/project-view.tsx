@@ -146,7 +146,7 @@ export const ProjectView = ({ projectId }: Props) => {
                       <DownloadIcon className={isDownloading ? "animate-spin" : ""} />
                       {isDownloading ? "Downloading..." : "Download"}
                     </Button>
-                    <Button 
+                    {/* <Button 
                       size="sm" 
                       variant="default"
                       onClick={handleAddClerkAuth}
@@ -155,7 +155,7 @@ export const ProjectView = ({ projectId }: Props) => {
                     >
                       <ShieldCheckIcon className={isAddingClerkAuth ? "animate-spin" : ""} />
                       {isAddingClerkAuth ? "Adding Auth..." : "Add Clerk Auth"}
-                    </Button>
+                    </Button> */}
                   </>
                 )}
                 {!hasProAccess && (
