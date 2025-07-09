@@ -87,4 +87,48 @@ export const messagesRouter = createTRPCRouter({
 
       return createMessage;
     }),
+  
+  addClerkAuth: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string().min(1, { message: "Project ID is required" }),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      // Verify the project belongs to the user
+      const project = await prisma.project.findUnique({
+        where: {
+          id: input.projectId,
+          userId: ctx.auth.userId,
+        },
+      });
+
+      if (!project) {
+        throw new TRPCError({ 
+          code: "FORBIDDEN", 
+          message: "Project not found or you don't have permission to modify it" 
+        });
+      }
+
+      // Create a message for adding Clerk authentication
+      const createMessage = await prisma.message.create({
+        data: {
+          projectId: input.projectId,
+          content: "Add Clerk authentication to this Next.js project. Install @clerk/nextjs, set up middleware, create authentication pages, and update the layout with sign-in/sign-up functionality.",
+          role: "USER",
+          type: "RESULT",
+        },
+      });
+
+      // Send to Inngest to process the Clerk integration
+      await inngest.send({
+        name: "code-agent/run",
+        data: {
+          value: "Add Clerk authentication to this Next.js project. Please:\n\n1. Install @clerk/nextjs package using npm install\n2. Create middleware.ts with clerkMiddleware\n3. Update app/layout.tsx to include ClerkProvider and authentication UI\n4. Create sign-in and sign-up pages under app/sign-in/[[...sign-in]]/page.tsx and app/sign-up/[[...sign-up]]/page.tsx\n5. Add a protected dashboard page at app/dashboard/page.tsx\n6. Update the main page to show authentication status\n7. Create .env.local with placeholder Clerk keys and instructions\n\nMake sure to follow the latest Clerk + Next.js App Router patterns and include proper TypeScript types.",
+          projectId: input.projectId,
+        },
+      });
+
+      return createMessage;
+    }),
 });

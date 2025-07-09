@@ -11,7 +11,7 @@ import { Fragment } from "@/generated/prisma";
 import { ProjectHeader } from "../components/project-header";
 import { FragmentWeb } from "../components/fragment-web";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CodeIcon, CrownIcon, EyeIcon, DownloadIcon } from "lucide-react";
+import { CodeIcon, CrownIcon, EyeIcon, DownloadIcon, ShieldCheckIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { CodeView } from "@/components/code-view";
@@ -22,7 +22,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import { downloadProjectAsZip } from "@/lib/download-utils";
 import { toast } from "sonner";
 import { useTRPC } from "@/trpic/client";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery, useMutation } from "@tanstack/react-query";
 
 interface Props {
   projectId: string;
@@ -34,10 +34,24 @@ export const ProjectView = ({ projectId }: Props) => {
   const [activeFragment, setActiveFragment] = useState<Fragment | null>(null);
   const [tabState, setTabState] = useState<"preview" | "code">("preview");
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isAddingClerkAuth, setIsAddingClerkAuth] = useState(false);
   
   const trpc = useTRPC();
   const { data: project } = useSuspenseQuery(
     trpc.projects.getOne.queryOptions({ id: projectId })
+  );
+
+  const addClerkAuth = useMutation(
+    trpc.messages.addClerkAuth.mutationOptions({
+      onSuccess: () => {
+        toast.success("Adding Clerk authentication to your project! Check the messages for progress.");
+      },
+      onError: (error) => {
+        toast.error(
+          error.message || "Failed to add Clerk authentication. Please try again."
+        );
+      },
+    })
   );
 
   const handleDownload = async () => {
@@ -48,11 +62,10 @@ export const ProjectView = ({ projectId }: Props) => {
 
     setIsDownloading(true);
     try {
-      // The project data is already verified to belong to the user (from the existing getOne query)
-      // No additional verification needed - if user can see the project, they can download it
       await downloadProjectAsZip(
         activeFragment.files as Record<string, string>,
-        project.name || "nextjs-project"
+        project.name || "nextjs-project",
+        false // Regular download without Clerk
       );
       toast.success("Project downloaded successfully!");
     } catch (error) {
@@ -60,6 +73,24 @@ export const ProjectView = ({ projectId }: Props) => {
       toast.error("Failed to download project. Please try again.");
     } finally {
       setIsDownloading(false);
+    }
+  };
+
+  const handleAddClerkAuth = async () => {
+    if (!activeFragment?.files) {
+      toast.error("No project to add authentication to. Please generate some code first.");
+      return;
+    }
+
+    setIsAddingClerkAuth(true);
+    try {
+      await addClerkAuth.mutateAsync({
+        projectId: projectId,
+      });
+    } catch (error) {
+      console.error("Add Clerk auth failed:", error);
+    } finally {
+      setIsAddingClerkAuth(false);
     }
   };
 
@@ -105,15 +136,27 @@ export const ProjectView = ({ projectId }: Props) => {
               </TabsList>
               <div className="ml-auto flex items-center gap-x-2">
                 {activeFragment?.files && (
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={handleDownload}
-                    disabled={isDownloading}
-                  >
-                    <DownloadIcon className={isDownloading ? "animate-spin" : ""} />
-                    {isDownloading ? "Downloading..." : "Download"}
-                  </Button>
+                  <>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={handleDownload}
+                      disabled={isDownloading || isAddingClerkAuth}
+                    >
+                      <DownloadIcon className={isDownloading ? "animate-spin" : ""} />
+                      {isDownloading ? "Downloading..." : "Download"}
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="default"
+                      onClick={handleAddClerkAuth}
+                      disabled={isDownloading || isAddingClerkAuth}
+                      className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                    >
+                      <ShieldCheckIcon className={isAddingClerkAuth ? "animate-spin" : ""} />
+                      {isAddingClerkAuth ? "Adding Auth..." : "Add Clerk Auth"}
+                    </Button>
+                  </>
                 )}
                 {!hasProAccess && (
                   <Button asChild size="sm" variant="default">
