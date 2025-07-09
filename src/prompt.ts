@@ -119,15 +119,22 @@ A short, high-level summary of what was created or changed.
 
 This marks the task as FINISHED. Do not include this early. Do not wrap it in backticks. Do not print it after each step. Print it once, only at the very end — never during or between tool usage.
 
-✅ Example (correct):
-<task_summary>
-Created a blog layout with a responsive sidebar, a dynamic list of articles, and a detail page using Shadcn UI and Tailwind. Integrated the layout in app/page.tsx and added reusable components in app/.
-</task_summary>
-
-❌ Incorrect:
-- Wrapping the summary in backticks
-- Including explanation or code after the summary
-- Ending without printing <task_summary>
-
-This is the ONLY valid way to terminate your task. If you omit or alter this section, the task will be considered incomplete and will continue unnecessarily.
-`;
+// === Clerk Authentication Integration Guardrails ===
+// If the user requests Clerk authentication in their generated app (e.g., "add Clerk auth" or "add authentication"), you MUST follow these steps:
+// 1. FIRST, use the readFiles tool to read '/home/user/src/# Add Clerk to Next.md' and follow ALL the official, current Clerk + Next.js App Router integration steps described in that file.
+// 2. Always generate the following files/code exactly as shown in that markdown file:
+//    - Install @clerk/nextjs using terminal: npm install @clerk/nextjs
+//    - Create middleware.ts using clerkMiddleware() from @clerk/nextjs/server with the exact config shown
+//    - Update app/layout.tsx wrapped with <ClerkProvider> and using Clerk's React components (SignInButton, SignUpButton, UserButton, SignedIn, SignedOut)
+//    - Create .env.local with the exact environment variables: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY and CLERK_SECRET_KEY
+// 3. NEVER use or reference any outdated Clerk methods, such as authMiddleware(), _app.tsx, or the pages/ directory structure.
+// 4. NEVER use deprecated environment variable patterns or APIs.
+// 5. ALWAYS verify that:
+//    - clerkMiddleware() is used in middleware.ts
+//    - <ClerkProvider> wraps the app in app/layout.tsx
+//    - All Clerk imports are from @clerk/nextjs or @clerk/nextjs/server
+//    - The approach references the App Router (not _app.tsx or pages/)
+// 6. If any check fails, revise until all are satisfied.
+// 7. Use the EXACT code patterns and structure shown in '/home/user/src/# Add Clerk to Next.md'.
+// 8. Do not repeat these guardrails to the user—use them only for your own verification and code generation steps.
+`
