@@ -11,7 +11,7 @@ import { Fragment } from "@/generated/prisma";
 import { ProjectHeader } from "../components/project-header";
 import { FragmentWeb } from "../components/fragment-web";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CodeIcon, CrownIcon, EyeIcon } from "lucide-react";
+import { CodeIcon, CrownIcon, EyeIcon, DownloadIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { CodeView } from "@/components/code-view";
@@ -19,6 +19,10 @@ import { FileExplorer } from "@/components/file-explorer";
 import { UserControl } from "@/components/user-control";
 import { useAuth } from "@clerk/nextjs";
 import { ErrorBoundary } from "react-error-boundary";
+import { downloadProjectAsZip } from "@/lib/download-utils";
+import { toast } from "sonner";
+import { useTRPC } from "@/trpic/client";
+import { useSuspenseQuery } from "@tanstack/react-query";
 
 interface Props {
   projectId: string;
@@ -29,6 +33,35 @@ export const ProjectView = ({ projectId }: Props) => {
   const hasProAccess = has?.({ plan: "pro" });
   const [activeFragment, setActiveFragment] = useState<Fragment | null>(null);
   const [tabState, setTabState] = useState<"preview" | "code">("preview");
+  const [isDownloading, setIsDownloading] = useState(false);
+  
+  const trpc = useTRPC();
+  const { data: project } = useSuspenseQuery(
+    trpc.projects.getOne.queryOptions({ id: projectId })
+  );
+
+  const handleDownload = async () => {
+    if (!activeFragment?.files) {
+      toast.error("No code to download. Please generate some code first.");
+      return;
+    }
+
+    setIsDownloading(true);
+    try {
+      // The project data is already verified to belong to the user (from the existing getOne query)
+      // No additional verification needed - if user can see the project, they can download it
+      await downloadProjectAsZip(
+        activeFragment.files as Record<string, string>,
+        project.name || "nextjs-project"
+      );
+      toast.success("Project downloaded successfully!");
+    } catch (error) {
+      console.error("Download failed:", error);
+      toast.error("Failed to download project. Please try again.");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   return (
     <div className="h-screen">
@@ -71,6 +104,17 @@ export const ProjectView = ({ projectId }: Props) => {
                 </TabsTrigger>
               </TabsList>
               <div className="ml-auto flex items-center gap-x-2">
+                {activeFragment?.files && (
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={handleDownload}
+                    disabled={isDownloading}
+                  >
+                    <DownloadIcon className={isDownloading ? "animate-spin" : ""} />
+                    {isDownloading ? "Downloading..." : "Download"}
+                  </Button>
+                )}
                 {!hasProAccess && (
                   <Button asChild size="sm" variant="default">
                     <Link href="/pricing">

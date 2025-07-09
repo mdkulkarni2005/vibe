@@ -82,4 +82,53 @@ export const projectsRouter = createTRPCRouter({
 
       return createProject;
     }),
+  
+  // Secure download procedure - only allows users to download their own projects
+  getProjectForDownload: protectedProcedure
+    .input(z.object({
+      projectId: z.string().min(1, { message: "Project ID is required" }),
+      fragmentId: z.string().min(1, { message: "Fragment ID is required" }),
+    }))
+    .query(async ({ input, ctx }) => {
+      // First verify the project belongs to the user
+      const project = await prisma.project.findUnique({
+        where: {
+          id: input.projectId,
+          userId: ctx.auth.userId, // This ensures only the owner can access
+        },
+      });
+
+      if (!project) {
+        throw new TRPCError({ 
+          code: "FORBIDDEN", 
+          message: "Project not found or you don't have permission to download it" 
+        });
+      }
+
+      // Get the specific fragment with files
+      const fragment = await prisma.fragment.findUnique({
+        where: {
+          id: input.fragmentId,
+        },
+        include: {
+          message: {
+            include: {
+              project: true,
+            },
+          },
+        },
+      });
+
+      if (!fragment || fragment.message.project.userId !== ctx.auth.userId) {
+        throw new TRPCError({ 
+          code: "FORBIDDEN", 
+          message: "Fragment not found or you don't have permission to download it" 
+        });
+      }
+
+      return {
+        project: project,
+        fragment: fragment,
+      };
+    }),
 });
