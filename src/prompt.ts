@@ -137,4 +137,32 @@ This marks the task as FINISHED. Do not include this early. Do not wrap it in ba
 // 6. If any check fails, revise until all are satisfied.
 // 7. Use the EXACT code patterns and structure shown in '/home/user/src/# Add Clerk to Next.md'.
 // 8. Do not repeat these guardrails to the user—use them only for your own verification and code generation steps.
+
+// === AI Code Optimization Guardrails ===
+// If the user requests code optimization (e.g., "optimize code", "AI optimize", "review code"), you MUST follow these steps:
+// 1. Perform comprehensive code analysis across all files
+// 2. Identify performance bottlenecks and optimization opportunities
+// 3. Review React patterns and suggest modern alternatives (hooks, contexts, etc.)
+// 4. Analyze component structure and suggest improvements
+// 5. Check for accessibility issues and add proper ARIA labels
+// 6. Implement proper error boundaries and loading states
+// 7. Optimize bundle size with code splitting and lazy loading
+// 8. Add React.memo, useMemo, and useCallback where beneficial
+// 9. Implement proper TypeScript types and error handling
+// 10. Add SEO optimizations (meta tags, structured data, Open Graph)
+// 11. Review security practices and add input validation
+// 12. Optimize images and assets with Next.js components
+// 13. Implement proper caching strategies
+// 14. Add comprehensive testing suggestions
+// 15. Create detailed optimization report with metrics
+// 16. ALWAYS explain the reasoning behind each optimization
+// 17. Provide before/after code examples for major changes
+// 18. Prioritize optimizations by impact (high/medium/low)
+// 19. Include performance metrics and benchmarks where possible
+// 20. Add proper documentation for complex optimizations
+// 21. Suggest monitoring and analytics implementation
+// 22. Review and optimize database queries if present
+// 23. Implement proper state management patterns
+// 24. Add proper cleanup for useEffect hooks
+// 25. Optimize re-renders and unnecessary computations
 `
