@@ -11,7 +11,7 @@ import { Fragment } from "@/generated/prisma";
 import { ProjectHeader } from "../components/project-header";
 import { FragmentWeb } from "../components/fragment-web";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CodeIcon, CrownIcon, EyeIcon, DownloadIcon, ShieldCheckIcon, ZapIcon } from "lucide-react";
+import { CodeIcon, CrownIcon, EyeIcon, DownloadIcon, ShieldCheckIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { CodeView } from "@/components/code-view";
@@ -35,7 +35,6 @@ export const ProjectView = ({ projectId }: Props) => {
   const [tabState, setTabState] = useState<"preview" | "code">("preview");
   const [isDownloading, setIsDownloading] = useState(false);
   const [isAddingClerkAuth, setIsAddingClerkAuth] = useState(false);
-  const [isOptimizingCode, setIsOptimizingCode] = useState(false);
   
   const trpc = useTRPC();
   const { data: project } = useSuspenseQuery(
@@ -50,19 +49,6 @@ export const ProjectView = ({ projectId }: Props) => {
       onError: (error) => {
         toast.error(
           error.message || "Failed to add Clerk authentication. Please try again."
-        );
-      },
-    })
-  );
-
-  const optimizeCode = useMutation(
-    trpc.messages.optimizeCode.mutationOptions({
-      onSuccess: () => {
-        toast.success("AI is analyzing and optimizing your code! Check the messages for detailed insights.");
-      },
-      onError: (error) => {
-        toast.error(
-          error.message || "Failed to optimize code. Please try again."
         );
       },
     })
@@ -105,24 +91,6 @@ export const ProjectView = ({ projectId }: Props) => {
       console.error("Add Clerk auth failed:", error);
     } finally {
       setIsAddingClerkAuth(false);
-    }
-  };
-
-  const handleOptimizeCode = async () => {
-    if (!activeFragment?.files) {
-      toast.error("No code to optimize. Please generate some code first.");
-      return;
-    }
-
-    setIsOptimizingCode(true);
-    try {
-      await optimizeCode.mutateAsync({
-        projectId: projectId,
-      });
-    } catch (error) {
-      console.error("Code optimization failed:", error);
-    } finally {
-      setIsOptimizingCode(false);
     }
   };
 
@@ -173,20 +141,10 @@ export const ProjectView = ({ projectId }: Props) => {
                       size="sm" 
                       variant="outline"
                       onClick={handleDownload}
-                      disabled={isDownloading || isAddingClerkAuth || isOptimizingCode}
+                      disabled={isDownloading || isAddingClerkAuth}
                     >
                       <DownloadIcon className={isDownloading ? "animate-spin" : ""} />
                       {isDownloading ? "Downloading..." : "Download"}
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="default"
-                      onClick={handleOptimizeCode}
-                      disabled={isDownloading || isAddingClerkAuth || isOptimizingCode}
-                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-                    >
-                      <ZapIcon className={isOptimizingCode ? "animate-spin" : ""} />
-                      {isOptimizingCode ? "Optimizing..." : "AI Optimize"}
                     </Button>
                     {/* <Button 
                       size="sm" 
