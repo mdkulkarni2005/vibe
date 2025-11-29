@@ -26,6 +26,13 @@ export const projectsRouter = createTRPCRouter({
     return existingProject;
   }),
   getMany: protectedProcedure.query(async ({ ctx }) => {
+    // Ensure user exists in database
+    await prisma.user.upsert({
+      where: { id: ctx.auth.userId },
+      update: {},
+      create: { id: ctx.auth.userId },
+    });
+
     const projects = await prisma.project.findMany({
       where: {
         userId: ctx.auth.userId,
@@ -43,6 +50,13 @@ export const projectsRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      // Ensure user exists in database before creating project
+      await prisma.user.upsert({
+        where: { id: ctx.auth.userId },
+        update: {},
+        create: { id: ctx.auth.userId },
+      });
+
       try {
         await consumeCredits();
       } catch (error) {
