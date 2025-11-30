@@ -11,10 +11,9 @@ import { Fragment } from "@/generated/prisma";
 import { ProjectHeader } from "../components/project-header";
 import { FragmentWeb } from "../components/fragment-web";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CodeIcon, CrownIcon, EyeIcon, DownloadIcon, ShieldCheckIcon } from "lucide-react";
+import { CodeIcon, CrownIcon, EyeIcon, DownloadIcon, GithubIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { CodeView } from "@/components/code-view";
 import { FileExplorer } from "@/components/file-explorer";
 import { UserControl } from "@/components/user-control";
 import { useAuth } from "@clerk/nextjs";
@@ -32,9 +31,10 @@ export const ProjectView = ({ projectId }: Props) => {
   const { has } = useAuth();
   const hasProAccess = has?.({ plan: "pro" });
   const [activeFragment, setActiveFragment] = useState<Fragment | null>(null);
-  const [tabState, setTabState] = useState<"preview" | "code">("preview");
+  const [tabState, setTabState] = useState<"preview" | "code" | "review">("preview");
   const [isDownloading, setIsDownloading] = useState(false);
   const [isAddingClerkAuth, setIsAddingClerkAuth] = useState(false);
+  const [isPushingToGitHub, setIsPushingToGitHub] = useState(false);
   
   const trpc = useTRPC();
   const { data: project } = useSuspenseQuery(
@@ -73,6 +73,46 @@ export const ProjectView = ({ projectId }: Props) => {
       toast.error("Failed to download project. Please try again.");
     } finally {
       setIsDownloading(false);
+    }
+  };
+
+  const handlePushToGitHub = async () => {
+    if (!project.githubEnabled) {
+      toast.error("GitHub not set up for this project. Please set it up first.");
+      return;
+    }
+
+    const githubToken = prompt("Enter your GitHub Personal Access Token:");
+    if (!githubToken) {
+      toast.info("GitHub push cancelled");
+      return;
+    }
+
+    setIsPushingToGitHub(true);
+    try {
+      const response = await fetch("/api/github/push", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId,
+          githubToken,
+          commitMessage: `Update from Vibe - ${new Date().toLocaleString()}`,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast.error(data.error || "Failed to push to GitHub");
+        return;
+      }
+
+      toast.success(`Pushed ${data.filesCount} files to GitHub!`);
+    } catch (error) {
+      console.error("GitHub push failed:", error);
+      toast.error("Failed to push to GitHub");
+    } finally {
+      setIsPushingToGitHub(false);
     }
   };
 
@@ -140,6 +180,16 @@ export const ProjectView = ({ projectId }: Props) => {
                     <Button 
                       size="sm" 
                       variant="outline"
+                      className="bg-white hover:bg-gray-50"
+                      onClick={handlePushToGitHub}
+                      disabled={isPushingToGitHub || !project.githubEnabled}
+                    >
+                      <GithubIcon className="w-4 h-4" />
+                      <span>{isPushingToGitHub ? "Pushing..." : "GitHub"}</span>
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
                       onClick={handleDownload}
                       disabled={isDownloading || isAddingClerkAuth}
                     >
@@ -177,6 +227,22 @@ export const ProjectView = ({ projectId }: Props) => {
                   files={activeFragment.files as { [path: string]: string }}
                 />
               )}
+            </TabsContent>
+            <TabsContent value="review" className="p-4">
+              {/* Placeholder section for CodeRabbit review. Kept minimal per request. */}
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold">CodeRabbit Review</h3>
+                <p className="text-sm text-muted-foreground">
+                  This section will display automated code review feedback from CodeRabbit for your current fragment.
+                </p>
+                {!activeFragment?.files ? (
+                  <p className="text-sm">No code available to review yet.</p>
+                ) : (
+                  <div className="text-sm rounded-md border p-3 bg-muted/50">
+                    Pending integration. Once connected, reviews will appear here for the selected fragment.
+                  </div>
+                )}
+              </div>
             </TabsContent>
           </Tabs>
         </ResizablePanel>

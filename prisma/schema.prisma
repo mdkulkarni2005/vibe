@@ -22,6 +22,11 @@ model Project {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  // GitHub Integration
+  githubRepoName String?  // Custom repo name chosen by user
+  githubRepoUrl  String?  // Full GitHub repo URL
+  githubEnabled  Boolean  @default(false) // Whether auto-push is enabled
+
   messages  Message[]
 }
 

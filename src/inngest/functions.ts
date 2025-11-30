@@ -259,6 +259,26 @@ export const codeAgentFunction = inngest.createFunction(
       });
     });
 
+    // Auto-push to GitHub if enabled
+    await step.run("auto-push-to-github", async () => {
+      if (isError) return null;
+
+      const project = await prisma.project.findUnique({
+        where: { id: event.data.projectId },
+        select: { githubEnabled: true, githubRepoName: true, userId: true },
+      });
+
+      if (!project?.githubEnabled || !project.githubRepoName) {
+        return null; // Skip if GitHub not enabled
+      }
+
+      // Note: Auto-push requires storing GitHub token securely
+      // For now, this is a placeholder. In production, you'd store encrypted tokens per user
+      console.log(`Auto-push triggered for project ${event.data.projectId} to repo ${project.githubRepoName}`);
+      
+      return null;
+    });
+
     return {
       url: sandboxUrl,
       title: "Fragment",

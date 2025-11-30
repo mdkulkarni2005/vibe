@@ -6,7 +6,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { zodResolver } from "@hookform/resolvers/zod";
 import TextareaAutosize from "react-textarea-autosize";
-import { ArrowUpIcon, Loader2Icon } from "lucide-react";
+import { ArrowUpIcon, Loader2Icon, GithubIcon } from "lucide-react";
 import {
   QueryClient,
   useMutation,
@@ -16,6 +16,15 @@ import { cn } from "@/lib/utils";
 import { useTRPC } from "@/trpic/client";
 import { Button } from "@/components/ui/button";
 import { Form, FormField } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { TypeOf } from "zod";
 import { useRouter } from "next/navigation";
 import { PROJECT_TEMPLATES } from "../../constants";
@@ -38,6 +47,12 @@ export const ProjectForm = ({ projectId }: Props) => {
   const trpc = useTRPC();
   const clerk = useClerk();
 
+  const [showGitHubDialog, setShowGitHubDialog] = useState(false);
+  const [createdProjectId, setCreatedProjectId] = useState<string | null>(null);
+  const [githubRepoName, setGithubRepoName] = useState("");
+  const [githubToken, setGithubToken] = useState("");
+  const [isSettingUpGitHub, setIsSettingUpGitHub] = useState(false);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -52,8 +67,9 @@ export const ProjectForm = ({ projectId }: Props) => {
         queryClient.invalidateQueries(
           trpc.usage.status.queryOptions()
         )
-        router.push(`/projects/${data.id}`);
-        
+        // Show GitHub setup dialog instead of immediate redirect
+        setCreatedProjectId(data.id);
+        setShowGitHubDialog(true);
       },
       onError: (error) => {
         toast.error(
@@ -68,6 +84,48 @@ export const ProjectForm = ({ projectId }: Props) => {
       },
     })
   );
+
+  const setupGitHub = async () => {
+    if (!createdProjectId || !githubRepoName || !githubToken) {
+      toast.error("Please provide both repository name and GitHub token");
+      return;
+    }
+
+    setIsSettingUpGitHub(true);
+    try {
+      const response = await fetch("/api/github/init", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId: createdProjectId,
+          repoName: githubRepoName,
+          githubToken,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast.error(data.error || "Failed to set up GitHub repository");
+        return;
+      }
+
+      toast.success(`GitHub repo created: ${data.repoUrl}`);
+      setShowGitHubDialog(false);
+      router.push(`/projects/${createdProjectId}`);
+    } catch (error) {
+      toast.error("Unexpected error setting up GitHub");
+    } finally {
+      setIsSettingUpGitHub(false);
+    }
+  };
+
+  const skipGitHub = () => {
+    setShowGitHubDialog(false);
+    if (createdProjectId) {
+      router.push(`/projects/${createdProjectId}`);
+    }
+  };
 
   const onSubmit = async (value: z.infer<typeof formSchema>) => {
     await createProject.mutateAsync({
@@ -155,6 +213,79 @@ export const ProjectForm = ({ projectId }: Props) => {
           ))}
         </div>
       </section>
+
+      {/* GitHub Setup Dialog */}
+      <Dialog open={showGitHubDialog} onOpenChange={setShowGitHubDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              <GithubIcon className="inline mr-2" />
+              Connect to GitHub (Optional)
+            </DialogTitle>
+            <DialogDescription>
+              Set up a GitHub repository to automatically push your code changes. You can skip this and set it up later.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Repository Name</label>
+              <Input
+                placeholder="my-awesome-project"
+                value={githubRepoName}
+                onChange={(e) => setGithubRepoName(e.target.value)}
+                disabled={isSettingUpGitHub}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">GitHub Personal Access Token</label>
+              <Input
+                type="password"
+                placeholder="ghp_xxxxxxxxxxxx"
+                value={githubToken}
+                onChange={(e) => setGithubToken(e.target.value)}
+                disabled={isSettingUpGitHub}
+              />
+              <p className="text-xs text-muted-foreground">
+                Need a token? Create one at{" "}
+                <a
+                  href="https://github.com/settings/tokens/new"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  github.com/settings/tokens
+                </a>{" "}
+                with <code>repo</code> scope.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={skipGitHub}
+              disabled={isSettingUpGitHub}
+            >
+              Skip for now
+            </Button>
+            <Button
+              onClick={setupGitHub}
+              disabled={!githubRepoName || !githubToken || isSettingUpGitHub}
+            >
+              {isSettingUpGitHub ? (
+                <>
+                  <Loader2Icon className="animate-spin mr-2" />
+                  Setting up...
+                </>
+              ) : (
+                "Connect GitHub"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Form>
   );
 };
