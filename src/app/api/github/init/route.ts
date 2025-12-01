@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
 
 /**
@@ -28,6 +28,32 @@ export async function POST(req: Request) {
     }, { status: 400 });
   }
 
+  // Validate repository name - GitHub doesn't allow certain characters
+  const invalidChars = /[@\s!#$%^&*()+={}\[\]|\\:;"'<>,.?/]/;
+  if (invalidChars.test(repoName)) {
+    return NextResponse.json({ 
+      error: "Invalid repository name",
+      detail: "Repository name can only contain letters, numbers, hyphens (-), underscores (_), and periods (.). Cannot contain spaces, @, or other special characters."
+    }, { status: 400 });
+  }
+
+  // Check for common invalid patterns
+  if (repoName.startsWith('.') || repoName.startsWith('-')) {
+    return NextResponse.json({ 
+      error: "Invalid repository name",
+      detail: "Repository name cannot start with a period (.) or hyphen (-)."
+    }, { status: 400 });
+  }
+
+  if (repoName.endsWith('.')) {
+    return NextResponse.json({ 
+      error: "Invalid repository name",
+      detail: "Repository name cannot end with a period (.)."
+    }, { status: 400 });
+  }
+
+  console.log(`[GitHub Init] Creating repository: ${repoName} for project: ${projectId}`);
+
   // Verify project ownership
   const project = await prisma.project.findUnique({
     where: { id: projectId, userId },
@@ -40,6 +66,19 @@ export async function POST(req: Request) {
   }
 
   try {
+    // Persist token to Clerk private metadata so user doesn't need to paste again
+    try {
+      const client = await clerkClient();
+      await client.users.updateUserMetadata(userId, {
+        privateMetadata: {
+          githubToken,
+        },
+      });
+    } catch (metaErr) {
+      console.warn("[GitHub Init] Failed to save token to Clerk private metadata", metaErr);
+      // Non-fatal: continue with repo creation
+    }
+
     // Create GitHub repo using GitHub API
     const response = await fetch("https://api.github.com/user/repos", {
       method: "POST",
@@ -59,6 +98,23 @@ export async function POST(req: Request) {
 
     if (!response.ok) {
       const error = await response.json();
+      console.error(`[GitHub Init] Failed to create repository:`, {
+        repoName,
+        status: response.status,
+        error
+      });
+      
+      // Check if repository already exists
+      if (response.status === 422 && error.errors?.some((e: { message?: string }) => 
+        e.message?.toLowerCase().includes("already exists") || 
+        e.message?.toLowerCase().includes("name already exists")
+      )) {
+        return NextResponse.json({ 
+          error: "Repository already exists",
+          detail: `A repository named '${repoName}' already exists in your GitHub account. Please use a different name or delete the existing repository first.`
+        }, { status: 422 });
+      }
+      
       return NextResponse.json({ 
         error: "Failed to create GitHub repo",
         detail: error.message || "Unknown error"
@@ -66,6 +122,11 @@ export async function POST(req: Request) {
     }
 
     const repoData = await response.json();
+    console.log(`[GitHub Init] Repository created successfully:`, {
+      repoName,
+      htmlUrl: repoData.html_url,
+      owner: repoData.owner?.login
+    });
 
     // Update project with GitHub info
     await prisma.project.update({

@@ -21,7 +21,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import { downloadProjectAsZip } from "@/lib/download-utils";
 import { toast } from "sonner";
 import { useTRPC } from "@/trpic/client";
-import { useSuspenseQuery, useMutation } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 
 interface Props {
   projectId: string;
@@ -33,7 +33,6 @@ export const ProjectView = ({ projectId }: Props) => {
   const [activeFragment, setActiveFragment] = useState<Fragment | null>(null);
   const [tabState, setTabState] = useState<"preview" | "code" | "review">("preview");
   const [isDownloading, setIsDownloading] = useState(false);
-  const [isAddingClerkAuth, setIsAddingClerkAuth] = useState(false);
   const [isPushingToGitHub, setIsPushingToGitHub] = useState(false);
   
   const trpc = useTRPC();
@@ -41,18 +40,7 @@ export const ProjectView = ({ projectId }: Props) => {
     trpc.projects.getOne.queryOptions({ id: projectId })
   );
 
-  const addClerkAuth = useMutation(
-    trpc.messages.addClerkAuth.mutationOptions({
-      onSuccess: () => {
-        toast.success("Adding Clerk authentication to your project! Check the messages for progress.");
-      },
-      onError: (error) => {
-        toast.error(
-          error.message || "Failed to add Clerk authentication. Please try again."
-        );
-      },
-    })
-  );
+  // Add Clerk Auth mutation removed; flow currently disabled.
 
   const handleDownload = async () => {
     if (!activeFragment?.files) {
@@ -82,12 +70,6 @@ export const ProjectView = ({ projectId }: Props) => {
       return;
     }
 
-    const githubToken = prompt("Enter your GitHub Personal Access Token:");
-    if (!githubToken) {
-      toast.info("GitHub push cancelled");
-      return;
-    }
-
     setIsPushingToGitHub(true);
     try {
       const response = await fetch("/api/github/push", {
@@ -95,7 +77,6 @@ export const ProjectView = ({ projectId }: Props) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           projectId,
-          githubToken,
           commitMessage: `Update from Vibe - ${new Date().toLocaleString()}`,
         }),
       });
@@ -103,7 +84,32 @@ export const ProjectView = ({ projectId }: Props) => {
       const data = await response.json();
 
       if (!response.ok) {
-        toast.error(data.error || "Failed to push to GitHub");
+        const errorMsg = data.detail || data.error || "Failed to push to GitHub";
+        console.error("GitHub push error:", {
+          error: data.error,
+          detail: data.detail,
+          repoName: data.repoName,
+          owner: data.owner
+        });
+        // Special case: token missing in server
+        if (response.status === 400 && (data.error?.includes("token") || data.detail?.includes("token"))) {
+          toast.error("GitHub token not found", {
+            description: "Please connect GitHub once to store your token. Go to project creation/setup and provide your token.",
+            duration: 8000,
+          });
+          return;
+        }
+        
+        // Show multiline errors properly
+        if (errorMsg.includes('\n')) {
+          const lines = errorMsg.split('\n');
+          toast.error(lines[0], {
+            description: lines.slice(1).join('\n'),
+            duration: 10000
+          });
+        } else {
+          toast.error(errorMsg);
+        }
         return;
       }
 
@@ -116,23 +122,7 @@ export const ProjectView = ({ projectId }: Props) => {
     }
   };
 
-  const handleAddClerkAuth = async () => {
-    if (!activeFragment?.files) {
-      toast.error("No project to add authentication to. Please generate some code first.");
-      return;
-    }
-
-    setIsAddingClerkAuth(true);
-    try {
-      await addClerkAuth.mutateAsync({
-        projectId: projectId,
-      });
-    } catch (error) {
-      console.error("Add Clerk auth failed:", error);
-    } finally {
-      setIsAddingClerkAuth(false);
-    }
-  };
+  // Add Clerk Auth flow is currently disabled in UI; handler removed to satisfy lint.
 
   return (
     <div className="h-screen">
@@ -191,7 +181,7 @@ export const ProjectView = ({ projectId }: Props) => {
                       size="sm" 
                       variant="outline"
                       onClick={handleDownload}
-                      disabled={isDownloading || isAddingClerkAuth}
+                      disabled={isDownloading}
                     >
                       <DownloadIcon className={isDownloading ? "animate-spin" : ""} />
                       {isDownloading ? "Downloading..." : "Download"}

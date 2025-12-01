@@ -106,24 +106,30 @@ export const ProjectForm = ({ projectId }: Props) => {
       const data = await response.json();
 
       if (!response.ok) {
-        toast.error(data.error || "Failed to set up GitHub repository");
+        const errorMsg = data.detail || data.error || "Failed to set up GitHub repository";
+        console.error("GitHub setup error:", data);
+        
+        // Show multiline errors with better formatting
+        if (errorMsg.includes('\n')) {
+          const lines = errorMsg.split('\n');
+          toast.error(lines[0], {
+            description: lines.slice(1).join('\n'),
+            duration: 10000
+          });
+        } else {
+          toast.error(errorMsg);
+        }
         return;
       }
 
-      toast.success(`GitHub repo created: ${data.repoUrl}`);
+      console.log("GitHub repository created:", data);
+      toast.success(`GitHub repo created: ${data.repoName}`);
       setShowGitHubDialog(false);
       router.push(`/projects/${createdProjectId}`);
     } catch (error) {
       toast.error("Unexpected error setting up GitHub");
     } finally {
       setIsSettingUpGitHub(false);
-    }
-  };
-
-  const skipGitHub = () => {
-    setShowGitHubDialog(false);
-    if (createdProjectId) {
-      router.push(`/projects/${createdProjectId}`);
     }
   };
 
@@ -214,16 +220,20 @@ export const ProjectForm = ({ projectId }: Props) => {
         </div>
       </section>
 
-      {/* GitHub Setup Dialog */}
-      <Dialog open={showGitHubDialog} onOpenChange={setShowGitHubDialog}>
-        <DialogContent>
+      {/* GitHub Setup Dialog - Required */}
+      <Dialog open={showGitHubDialog} onOpenChange={() => {}}>
+        <DialogContent 
+          className="sm:max-w-md" 
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>
               <GithubIcon className="inline mr-2" />
-              Connect to GitHub (Optional)
+              Connect to GitHub (Required)
             </DialogTitle>
             <DialogDescription>
-              Set up a GitHub repository to automatically push your code changes. You can skip this and set it up later.
+              Set up a GitHub repository for your project. This is required to save and manage your code.
             </DialogDescription>
           </DialogHeader>
           
@@ -236,6 +246,9 @@ export const ProjectForm = ({ projectId }: Props) => {
                 onChange={(e) => setGithubRepoName(e.target.value)}
                 disabled={isSettingUpGitHub}
               />
+              <p className="text-xs text-muted-foreground">
+                Use letters, numbers, hyphens (-), and underscores (_) only. No spaces or special characters like @.
+              </p>
             </div>
             
             <div className="space-y-2">
@@ -264,15 +277,9 @@ export const ProjectForm = ({ projectId }: Props) => {
 
           <DialogFooter>
             <Button
-              variant="outline"
-              onClick={skipGitHub}
-              disabled={isSettingUpGitHub}
-            >
-              Skip for now
-            </Button>
-            <Button
               onClick={setupGitHub}
               disabled={!githubRepoName || !githubToken || isSettingUpGitHub}
+              className="w-full"
             >
               {isSettingUpGitHub ? (
                 <>

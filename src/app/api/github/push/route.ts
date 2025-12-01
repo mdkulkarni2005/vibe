@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
 
 /**
@@ -20,11 +20,32 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { projectId, githubToken, commitMessage = "Update from Vibe" } = body;
+  const { projectId, commitMessage = "Update from Vibe" } = body;
+  let { githubToken } = body as { githubToken?: string };
   
-  if (!projectId || !githubToken) {
+  if (!projectId) {
+    return NextResponse.json({ error: "projectId required" }, { status: 400 });
+  }
+
+  // If token not provided, try to fetch from Clerk private metadata
+  if (!githubToken) {
+    try {
+  const client = await clerkClient();
+  const user = await client.users.getUser(userId);
+  const pm = user.privateMetadata as Record<string, unknown> | null | undefined;
+  const storedToken = pm && typeof pm.githubToken === "string" ? (pm.githubToken as string) : undefined;
+      if (storedToken) {
+        githubToken = storedToken;
+      }
+    } catch (metaErr) {
+      console.warn("[GitHub Push] Failed to read token from Clerk private metadata", metaErr);
+    }
+  }
+
+  if (!githubToken) {
     return NextResponse.json({ 
-      error: "projectId and githubToken required" 
+      error: "GitHub token not found",
+      detail: "Please connect GitHub once to store your token, or include 'githubToken' in the request body.",
     }, { status: 400 });
   }
 
@@ -78,6 +99,8 @@ export async function POST(req: Request) {
     const userData = await userResponse.json();
     const owner = userData.login;
 
+    console.log(`[GitHub Push] Attempting to access repository: ${owner}/${project.githubRepoName}`);
+
     // Get the default branch (usually 'main' or 'master')
     const repoResponse = await fetch(
       `https://api.github.com/repos/${owner}/${project.githubRepoName}`,
@@ -90,8 +113,19 @@ export async function POST(req: Request) {
     );
 
     if (!repoResponse.ok) {
+      const errorData = await repoResponse.json().catch(() => ({}));
+      console.error(`[GitHub Push] Repository not found:`, {
+        owner,
+        repoName: project.githubRepoName,
+        status: repoResponse.status,
+        error: errorData
+      });
+      
       return NextResponse.json({ 
-        error: "Repository not found" 
+        error: "Repository not found",
+        detail: `Could not find repository '${owner}/${project.githubRepoName}'. Please verify:\n1. The repository name doesn't contain invalid characters like @ or spaces\n2. The repository exists in your GitHub account\n3. Your token has access to this repository\n\nIf you just created the repo, wait 5-10 seconds and try again.`,
+        repoName: project.githubRepoName,
+        owner: owner
       }, { status: 404 });
     }
 
