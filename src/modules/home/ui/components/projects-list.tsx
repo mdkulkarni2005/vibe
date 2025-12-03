@@ -5,7 +5,7 @@ import { useTRPC } from "@/trpic/client";
 import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
 import Link from "next/link";
-import { format, formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import { useUser } from "@clerk/nextjs";
 
 export const ProjectsList = () => {

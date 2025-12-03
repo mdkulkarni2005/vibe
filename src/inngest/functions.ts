@@ -13,7 +13,6 @@ import { getSandbox, lastAssistantTextMessageContent, parseAgentOutput } from ".
 import { z } from "zod";
 import { FRAGMENT_TITLE_PROMPT, PROMPT, RESPONSE_PROMPT } from "@/prompt";
 import { prisma } from "@/lib/db";
-import { models } from "inngest";
 import { SANDBOX_TIMEOUT } from "./types";
 
 interface AgentState {

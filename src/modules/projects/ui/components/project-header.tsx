@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSubTrigger
 } from "@/components/ui/dropdown-menu";
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { ChevronDownIcon, ChevronLeftIcon, SunMoonIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";

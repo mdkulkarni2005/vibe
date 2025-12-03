@@ -8,7 +8,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import TextareaAutosize from "react-textarea-autosize";
 import { ArrowUpIcon, Loader2Icon, GithubIcon } from "lucide-react";
 import {
-  QueryClient,
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query";
@@ -25,14 +24,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { TypeOf } from "zod";
 import { useRouter } from "next/navigation";
 import { PROJECT_TEMPLATES } from "../../constants";
 import { useClerk } from "@clerk/nextjs";
-
-interface Props {
-  projectId?: string;
-}
 
 const formSchema = z.object({
   value: z
@@ -41,7 +35,7 @@ const formSchema = z.object({
     .max(1000, { message: "Message must be less than 1000 characters" }),
 });
 
-export const ProjectForm = ({ projectId }: Props) => {
+export const ProjectForm = () => {
   const router = useRouter();
   const queryClient = useQueryClient();
   const trpc = useTRPC();
@@ -126,7 +120,7 @@ export const ProjectForm = ({ projectId }: Props) => {
       toast.success(`GitHub repo created: ${data.repoName}`);
       setShowGitHubDialog(false);
       router.push(`/projects/${createdProjectId}`);
-    } catch (error) {
+    } catch {
       toast.error("Unexpected error setting up GitHub");
     } finally {
       setIsSettingUpGitHub(false);

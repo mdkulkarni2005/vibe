@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { SignUp, SignIn, SignInButton, SignUpButton, SignedOut, SignedIn } from "@clerk/nextjs"
+import { SignInButton, SignUpButton, SignedOut, SignedIn } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
 import { UserControl } from "@/components/user-control"
 import { useScroll } from "@/hooks/use-scroll"

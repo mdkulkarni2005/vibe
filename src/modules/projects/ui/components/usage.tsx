@@ -4,7 +4,6 @@ import { formatDuration, intervalToDuration } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@clerk/nextjs";
 import { useMemo } from "react";
-import { ms } from "date-fns/locale";
 
 interface Props {
   points: number;

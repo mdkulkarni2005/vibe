@@ -6,7 +6,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import TextareaAutosize from "react-textarea-autosize";
 import { ArrowUpIcon, Loader2Icon } from "lucide-react";
 import {
-  QueryClient,
   useMutation,
   useQuery,
   useQueryClient,
@@ -15,7 +14,6 @@ import { cn } from "@/lib/utils";
 import { useTRPC } from "@/trpic/client";
 import { Button } from "@/components/ui/button";
 import { Form, FormField } from "@/components/ui/form";
-import { TypeOf } from "zod";
 import { Usage } from "./usage";
 import { useRouter } from "next/navigation";
 

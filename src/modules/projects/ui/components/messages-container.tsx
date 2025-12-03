@@ -4,7 +4,6 @@ import { MessageCard } from "./message-card";
 import { MessageForm } from "./message-form";
 import { useEffect, useRef } from "react";
 import { Fragment } from "@/generated/prisma";
-import { se } from "date-fns/locale";
 import { MessageLoading } from "./message-loading";
 
 interface Props {

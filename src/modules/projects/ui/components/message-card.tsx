@@ -1,7 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Fragment, MessageType, MessageRole } from "@/generated/prisma";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
 import { ChevronRightIcon, Code2Icon } from "lucide-react";
 import Image from "next/image";
 
@@ -63,7 +62,6 @@ interface AssistantMessageProps {
 const AssistantMessage = ({
   content,
   fragment,
-  createdAt,
   isActiveFragment,
   onFragmentClick,
   type,

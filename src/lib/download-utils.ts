@@ -520,7 +520,6 @@ export default function SignUpPage() {
 }`;
 
   // Update the main page to include auth features
-  const originalPage = baseTemplate['src/app/page.tsx'];
   baseTemplate['src/app/page.tsx'] = `import { SignedIn, SignedOut, SignInButton, SignUpButton } from "@clerk/nextjs";
 import Link from "next/link";
 
