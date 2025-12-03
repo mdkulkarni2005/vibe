@@ -222,7 +222,7 @@ export const ProjectView = ({ projectId }: Props) => {
                 />
               )}
             </TabsContent>
-            <TabsContent value="review" className="p-4">
+            <TabsContent value="review" className="h-full overflow-hidden">
               <ReviewTab projectId={projectId} />
             </TabsContent>
           </Tabs>

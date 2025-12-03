@@ -52,7 +52,7 @@ export const MessagesContainer = ({
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
         <div className="pt-2 pr-1">
           {messages.map((message) => (
             <MessageCard

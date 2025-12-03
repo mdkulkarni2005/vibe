@@ -46,7 +46,7 @@ export function DiagramViewer({ diagram, title }: DiagramViewerProps) {
       <CardContent>
         <div
           ref={diagramRef}
-          className="flex items-center justify-center p-4 bg-muted rounded-lg overflow-x-auto"
+          className="flex items-center justify-center p-4 bg-muted rounded-lg overflow-auto custom-scrollbar max-h-[500px]"
         />
       </CardContent>
     </Card>

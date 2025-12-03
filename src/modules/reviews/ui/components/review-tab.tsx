@@ -99,36 +99,42 @@ export function ReviewTab({ projectId }: ReviewTabProps) {
   }
 
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="container mx-auto py-6 px-4 max-w-7xl space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold">AI Code Review</h2>
-            <p className="text-muted-foreground text-sm">
-              Comprehensive analysis with security, bugs, and quality insights
-            </p>
+    <div className="h-full flex flex-col overflow-hidden">
+      {/* Fixed Header */}
+      <div className="flex-shrink-0 border-b bg-background">
+        <div className="container mx-auto px-6 py-4 max-w-7xl">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold">AI Code Review</h2>
+              <p className="text-muted-foreground text-sm">
+                Comprehensive analysis with security, bugs, and quality insights
+              </p>
+            </div>
+            <Button
+              onClick={handleGenerateReview}
+              disabled={isGenerating || review?.status === 'IN_PROGRESS'}
+              size="sm"
+            >
+              {isGenerating || review?.status === 'IN_PROGRESS' ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Analyzing...
+                </>
+              ) : (
+                <>
+                  <FileSearch className="w-4 h-4 mr-2" />
+                  {review ? 'New Review' : 'Start Review'}
+                </>
+              )}
+            </Button>
           </div>
-          <Button
-            onClick={handleGenerateReview}
-            disabled={isGenerating || review?.status === 'IN_PROGRESS'}
-            size="sm"
-          >
-            {isGenerating || review?.status === 'IN_PROGRESS' ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Analyzing...
-              </>
-            ) : (
-              <>
-                <FileSearch className="w-4 h-4 mr-2" />
-                {review ? 'New Review' : 'Start Review'}
-              </>
-            )}
-          </Button>
         </div>
+      </div>
 
-        {/* Error Alert */}
+      {/* Scrollable Content Area */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar">
+        <div className="container mx-auto px-6 py-6 max-w-7xl">
+          <div className="space-y-6">
         {error && (
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
@@ -299,6 +305,8 @@ export function ReviewTab({ projectId }: ReviewTabProps) {
             )}
           </div>
         )}
+          </div>
+        </div>
       </div>
     </div>
   );
