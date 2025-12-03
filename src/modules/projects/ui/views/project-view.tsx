@@ -22,6 +22,7 @@ import { downloadProjectAsZip } from "@/lib/download-utils";
 import { toast } from "sonner";
 import { useTRPC } from "@/trpic/client";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { ReviewTab } from "@/modules/reviews/ui/components/review-tab";
 
 interface Props {
   projectId: string;
@@ -222,20 +223,7 @@ export const ProjectView = ({ projectId }: Props) => {
               )}
             </TabsContent>
             <TabsContent value="review" className="p-4">
-              {/* Placeholder section for CodeRabbit review. Kept minimal per request. */}
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold">CodeRabbit Review</h3>
-                <p className="text-sm text-muted-foreground">
-                  This section will display automated code review feedback from CodeRabbit for your current fragment.
-                </p>
-                {!activeFragment?.files ? (
-                  <p className="text-sm">No code available to review yet.</p>
-                ) : (
-                  <div className="text-sm rounded-md border p-3 bg-muted/50">
-                    Pending integration. Once connected, reviews will appear here for the selected fragment.
-                  </div>
-                )}
-              </div>
+              <ReviewTab projectId={projectId} />
             </TabsContent>
           </Tabs>
         </ResizablePanel>

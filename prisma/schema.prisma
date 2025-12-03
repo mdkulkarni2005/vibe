@@ -5,7 +5,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  // url property removed. Set connection URL in prisma.config.ts as per Prisma 7+ docs.
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -28,6 +28,7 @@ model Project {
   githubEnabled  Boolean  @default(false) // Whether auto-push is enabled
 
   messages  Message[]
+  reviews   Review[]
 }
 
 enum MessageRole {
@@ -69,4 +70,109 @@ model Usage {
   key String @id
   points Int
   expire DateTime?
+}
+
+enum ReviewStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
+enum IssueSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+  INFO
+}
+
+enum IssueType {
+  SECURITY
+  BUG
+  CODE_QUALITY
+  PERFORMANCE
+  BEST_PRACTICE
+}
+
+model Review {
+  id          String        @id @default(uuid())
+  projectId   String
+  project     Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  status      ReviewStatus  @default(PENDING)
+  summary     String?       @db.Text
+  score       Int?          // Overall code quality score (0-100)
+  
+  // Statistics
+  totalFiles      Int       @default(0)
+  totalIssues     Int       @default(0)
+  criticalIssues  Int       @default(0)
+  highIssues      Int       @default(0)
+  mediumIssues    Int       @default(0)
+  lowIssues       Int       @default(0)
+  
+  // Diagram data (stored as JSON)
+  architectureDiagram String? @db.Text // Mermaid diagram
+  complexityGraph     String? @db.Text // Mermaid diagram
+  
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  completedAt DateTime?
+  
+  files       ReviewFile[]
+  issues      CodeIssue[]
+  
+  @@index([projectId])
+}
+
+model ReviewFile {
+  id          String   @id @default(uuid())
+  reviewId    String
+  review      Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  
+  filePath    String
+  language    String?
+  linesOfCode Int      @default(0)
+  complexity  Int      @default(0)
+  score       Int?     // File-specific score (0-100)
+  
+  issues      CodeIssue[]
+  
+  @@index([reviewId])
+}
+
+model CodeIssue {
+  id          String         @id @default(uuid())
+  reviewId    String
+  review      Review         @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  
+  fileId      String?
+  file        ReviewFile?    @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  
+  type        IssueType
+  severity    IssueSeverity
+  title       String
+  description String         @db.Text
+  
+  // Location in file
+  filePath    String?
+  lineStart   Int?
+  lineEnd     Int?
+  code        String?        @db.Text
+  
+  // Recommendations
+  recommendation String?     @db.Text
+  fixCode        String?     @db.Text
+  
+  // Security specific fields
+  cweId          String?     // Common Weakness Enumeration ID
+  cvssScore      Float?      // Common Vulnerability Scoring System
+  
+  createdAt   DateTime       @default(now())
+  
+  @@index([reviewId])
+  @@index([fileId])
+  @@index([severity])
+  @@index([type])
 }
