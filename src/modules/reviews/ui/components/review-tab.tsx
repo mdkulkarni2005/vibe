@@ -226,7 +226,7 @@ export function ReviewTab({ projectId }: ReviewTabProps) {
 
             {/* Diagrams */}
             {(review.architectureDiagram || review.complexityGraph) && (
-              <div className="grid gap-6 md:grid-cols-2">
+              <div className="grid gap-6 grid-cols-1">
                 {review.architectureDiagram && (
                   <DiagramViewer
                     diagram={review.architectureDiagram}
