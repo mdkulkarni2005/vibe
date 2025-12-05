@@ -9,7 +9,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, AlertTriangle, FileSearch } from 'lucide-react';
 import { ReviewOverview } from './review-overview';
 import { IssuesList } from './issues-list';
-import { DiagramViewer } from './diagram-viewer';
 import { toast } from 'sonner';
 
 interface ReviewTabProps {
@@ -225,22 +224,7 @@ export function ReviewTab({ projectId }: ReviewTabProps) {
             )}
 
             {/* Diagrams */}
-            {(review.architectureDiagram || review.complexityGraph) && (
-              <div className="grid gap-6 grid-cols-1">
-                {review.architectureDiagram && (
-                  <DiagramViewer
-                    diagram={review.architectureDiagram}
-                    title="Architecture Diagram"
-                  />
-                )}
-                {review.complexityGraph && (
-                  <DiagramViewer
-                    diagram={review.complexityGraph}
-                    title="Complexity Analysis"
-                  />
-                )}
-              </div>
-            )}
+            {/* Diagrams removed - showing summary and issues instead */}
 
             {/* Issues List */}
             {review.issues && review.issues.length > 0 && (
