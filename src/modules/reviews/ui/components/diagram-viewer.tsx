@@ -52,7 +52,7 @@ export function DiagramViewer({ diagram, title }: DiagramViewerProps) {
             // Store SVG for fullscreen dialog
             setFullscreenDiagramSvg(svg);
           }
-        } catch (error) {
+        } catch {
           // Silently fail - show unavailable message without console errors
           if (diagramRef.current) {
             diagramRef.current.innerHTML = '<p class="text-muted-foreground text-sm">Diagram unavailable</p>';
